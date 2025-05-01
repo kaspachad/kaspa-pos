@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kaspa POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --kaspa-teal: #70C7BA;
+      --kaspa-dark: #231F20;
+      --kaspa-gray: #B6B6B6;
+      --kaspa-accent: #49EACB;
+      --font: 'Inter', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #f0f2f5;
+      color: var(--kaspa-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #form {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      width: 360px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; }
+    #settings-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: var(--kaspa-dark);
+    }
+    #settings-btn:hover { color: var(--kaspa-teal); }
+    .input-group { margin-bottom: 12px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 12px; font-size: 1.2rem; text-align: right;
+      border: 1px solid var(--kaspa-gray); border-radius: 6px;
+    }
+    input:focus { outline:none; border-color: var(--kaspa-teal); }
+    .tips { display: flex; justify-content: space-between; margin: 12px 0; }
+    .tips button {
+      flex:1; margin: 0 4px; padding: 10px; font-size: 1rem;
+      border: 1px solid var(--kaspa-gray); border-radius: 6px;
+      background: #fff; cursor: pointer;
+    }
+    .tips button.active { background: var(--kaspa-teal); color: #fff; border-color: var(--kaspa-teal); }
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .numpad button {
+      padding: 16px; font-size: 1.25rem;
+      border: 1px solid var(--kaspa-gray); border-radius: 6px;
+      background: #fff; cursor: pointer;
+    }
+    .numpad button:active { background: var(--kaspa-gray); }
+    #pay-btn {
+      width: 100%; padding: 14px; margin-top: 16px;
+      background: var(--kaspa-teal); color: #fff; border: none; border-radius: 8px;
+      font-weight: 600; font-size: 1.1rem; cursor: pointer;
+    }
+    #pay-btn:hover { background: var(--kaspa-accent); }
+    #qrcode-container {
+      position: fixed; top: 0; left: 0; width:100vw; height:100vh;
+      background: rgba(255,255,255,0.97);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index:1000;
+    }
+    #qrcode-container.hidden { display: none; }
+    #qrcode { background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.1); }
+    #details { margin-top:16px; text-align:center; }
+    #details p { margin:6px 0; }
+    #details .amount, #details .total { font-size:1rem; }
+    #details .total { font-weight:700; }
+    #details .tip { font-size:0.9rem; color:var(--kaspa-gray); }
+    #back-btn {
+      margin-top:24px; background:transparent; color:var(--kaspa-dark);
+      border:2px solid var(--kaspa-teal); padding:10px 20px; border-radius:8px;
+      font-size:1rem; cursor:pointer;
+    }
+    #back-btn:hover { background:var(--kaspa-teal); color:#fff; }
+    #settings-container {
+      position: fixed; top: 0; left: 0; width:100%; height:100%;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center; z-index: 1001;
+    }
+    #settings-container.hidden { display: none; }
+    .settings-modal {
+      background: #fff; padding: 24px; border-radius: 12px; width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .settings-modal h2 {
+      margin-bottom: 16px; font-size: 1.25rem; font-weight: 700; text-align: center;
+    }
+    .settings-modal .field {
+      margin-bottom: 16px;
+    }
+    .settings-modal label { display: block; margin-bottom: 6px; font-weight: 600; }
+    .settings-modal input, .settings-modal select {
+      width: 100%; padding: 10px; border: 1px solid var(--kaspa-gray); border-radius: 6px;
+      font-size: 1rem;
+    }
+    .settings-modal button {
+      width: 100%; padding: 10px; margin-top: 8px; border: none; border-radius: 6px;
+      font-weight: 600; cursor: pointer;
+    }
+    .settings-modal #save-settings { background: var(--kaspa-teal); color: #fff; }
+    .settings-modal #save-settings:hover { background: var(--kaspa-accent); }
+    .settings-modal #close-settings { background: var(--kaspa-gray); color: var(--kaspa-dark); }
+    .settings-modal #close-settings:hover { background: var(--kaspa-dark); color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="form">
+    <div class="header">
+      <h1>Kaspa POS</h1>
+      <button id="settings-btn" title="Settings">⚙️</button>
+    </div>
+    <div class="input-group">
+      <label for="amount">Amount (<span id="currency-label">USD</span>)</label>
+      <input id="amount" type="text" readonly />
+    </div>
+    <div class="input-group">
+      <label for="custom-tip">Tip (<span id="currency-label-tip">USD</span>)</label>
+      <div class="tips">
+        <button data-tip="0">No Tip</button>
+        <button data-tip="0.1">10%</button>
+        <button data-tip="0.2">20%</button>
+        <button id="custom-tip-btn">Custom</button>
+      </div>
+      <input id="custom-tip" type="text" placeholder="0.00" readonly style="display:none; margin-top:8px;" />
+    </div>
+    <div class="numpad">
+      <button>1</button><button>2</button><button>3</button>
+      <button>4</button><button>5</button><button>6</button>
+      <button>7</button><button>8</button><button>9</button>
+      <button>.</button><button>0</button><button id="clear-btn">⌫</button>
+    </div>
+    <button id="pay-btn">Generate QR Code</button>
+  </div>
+  <div id="qrcode-container" class="hidden">
+    <div id="qrcode"></div>
+    <div id="details"></div>
+    <button id="back-btn">Back</button>
+  </div>
+  <div id="settings-container" class="hidden">
+    <div class="settings-modal">
+      <h2>Settings</h2>
+      <div class="field">
+        <label for="settings-address">Kaspa Address</label>
+        <input type="text" id="settings-address" placeholder="kaspa:KA..." />
+      </div>
+      <div class="field">
+        <label for="settings-currency">Currency</label>
+        <select id="settings-currency">
+           <option value="usd">USD</option>
+           <option value="eur">EUR</option>
+           <option value="mxn">MXN</option>
+           <option value="gbp">GBP</option>
+        </select>
+      </div>
+      <button id="save-settings">Save</button>
+      <button id="close-settings">Close</button>
+    </div>
+  </div>
+  <script>
+    const symbolMap = { usd:'$', eur:'€', gbp:'£', mxn:'$' };
+    function formatCurrency(amount, code) { return `${symbolMap[code]||code+' '}${parseFloat(amount).toFixed(2)}`; }
+    let storeAddress = localStorage.getItem('posStoreAddress')||'KA...';
+    let currency = localStorage.getItem('posCurrency')||'usd';
+
+    // Elements
+    const amountInput = document.getElementById('amount');
+    const tipButtons = document.querySelectorAll('.tips button');
+    const customTipBtn = document.getElementById('custom-tip-btn');
+    const customTipInput = document.getElementById('custom-tip');
+    const numpad = document.querySelectorAll('.numpad button');
+    const clearBtn = document.getElementById('clear-btn');
+    const payBtn = document.getElementById('pay-btn');
+    const qrContainer = document.getElementById('qrcode-container');
+    const qrDiv = document.getElementById('qrcode');
+    const detailsDiv = document.getElementById('details');
+    const backBtn = document.getElementById('back-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsContainer = document.getElementById('settings-container');
+    const closeSettings = document.getElementById('close-settings');
+    const saveSettings = document.getElementById('save-settings');
+    const settingsCurrency = document.getElementById('settings-currency');
+    const settingsAddress = document.getElementById('settings-address');
+    const labelCurrency = document.getElementById('currency-label');
+    const labelCurrencyTip = document.getElementById('currency-label-tip');
+
+    // Init UI
+    settingsCurrency.value = currency;
+    settingsAddress.value = 'kaspa:' + storeAddress;
+    updateLabels();
+    function updateLabels() {
+      const cur = currency.toUpperCase();
+      labelCurrency.textContent = cur;
+      labelCurrencyTip.textContent = cur;
+    }
+
+    // Settings handlers
+    settingsBtn.addEventListener('click', () => {
+      settingsCurrency.value = currency;
+      settingsAddress.value = 'kaspa:' + storeAddress;
+      settingsContainer.classList.remove('hidden');
+    });
+    closeSettings.addEventListener('click', () => settingsContainer.classList.add('hidden'));
+    saveSettings.addEventListener('click', () => {
+      currency = settingsCurrency.value;
+      const addr = settingsAddress.value.trim();
+      storeAddress = addr.startsWith('kaspa:') ? addr.slice(7) : addr;
+      localStorage.setItem('posCurrency', currency);
+      localStorage.setItem('posStoreAddress', storeAddress);
+      updateLabels();
+      settingsContainer.classList.add('hidden');
+    });
+
+    // Tip selection
+    let activeInput = amountInput;
+    let tipPercent = 0;
+    tipButtons.forEach(btn => btn.addEventListener('click', () => {
+      tipButtons.forEach(b => b.classList.remove('active'));
+      customTipInput.style.display = 'none';
+      activeInput = amountInput;
+      if (btn.id === 'custom-tip-btn') {
+        customTipInput.style.display = 'block';
+        activeInput = customTipInput;
+      } else {
+        tipPercent = parseFloat(btn.dataset.tip);
+        btn.classList.add('active');
+      }
+    }));
+
+    // Numpad
+    numpad.forEach(btn => {
+      if (btn !== clearBtn) {
+        btn.addEventListener('click', () => activeInput.value += btn.textContent);
+      }
+    });
+    clearBtn.addEventListener('click', () => activeInput.value = '');
+
+    // Generate QR
+    payBtn.addEventListener('click', async () => {
+      const amt = parseFloat(amountInput.value) || 0;
+      let tipAmt = 0;
+      if (customTipInput.style.display === 'block') {
+        tipAmt = parseFloat(customTipInput.value) || 0;
+      } else {
+        tipAmt = amt * tipPercent;
+      }
+      const total = amt + tipAmt;
+      const rateData = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=${currency}`
+      );
+      const rateJson = await rateData.json();
+      const rate = rateJson.kaspa[currency];
+      const baseKAS = (amt / rate).toFixed(2);
+      const tKAS = (tipAmt / rate).toFixed(2);
+      const totalKAS = (parseFloat(baseKAS) + parseFloat(tKAS)).toFixed(2);
+      const uri = `kaspa:${storeAddress}?amount=${totalKAS}`;
+      qrDiv.innerHTML = '';
+      new QRCode(qrDiv, { text: uri, width: 280, height: 280 });
+      detailsDiv.innerHTML =
+        `<p class="amount">Amount: ${baseKAS} KAS (${formatCurrency(amt, currency)})</p>` +
+        `<p class="tip">Tip: ${tKAS} KAS (${formatCurrency(tipAmt, currency)})</p>` +
+        `<p class="total">Total: ${totalKAS} KAS (${formatCurrency(total, currency)})</p>`;
+      document.getElementById('form').style.display = 'none';
+      qrContainer.classList.remove('hidden');
+    });
+
+    // Back button
+    backBtn.addEventListener('click', () => {
+      qrContainer.classList.add('hidden');
+      document.getElementById('form').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
+

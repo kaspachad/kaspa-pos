@@ -1,0 +1,12 @@
+{
+  "android": {
+    "release": {
+      "keystore": "my-release-key.keystore",
+      "storePassword": "TapuzAdom123!",
+      "alias": "KaspaHero",
+      "password": "TapuzAdom123!",
+      "keystoreType": ""
+    }
+  }
+}
+
